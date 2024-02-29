@@ -1,0 +1,94 @@
+import pandas as pd
+
+
+## SMS
+df_sms = pd.read_excel("D:/1.DAS/0 Shree Devi/2022/1. Raw/SMS/Weekly Active/1. Jan_22-/28-01-2022_Active_Final.xlsx")
+df_sms['VC_Number'] = df_sms['VC_Number'].str.replace("'", "")
+df_sms = df_sms.drop_duplicates(subset="VC_Number")
+df_sms['VC_Number'] = pd.to_numeric(df_sms['VC_Number'], errors='coerce').combine_first(df_sms['VC_Number'])
+df_sms.rename(columns={'VC_Number': 'VC'}, inplace=True)
+df_sms = df_sms.loc[:, ['VC', 'CAS']]
+df_sms.shape
+df_sms.CAS.unique()
+
+
+## ABV
+df_abv = pd.read_excel("D:/1.DAS/0 Shree Devi/2022/2. Sorting/Weekly Unique/CAS/ABV/28.01.2022_unique.xlsx")
+df_abv['SMARTCARDNO'] = df_abv['SMARTCARDNO'].str.replace("'", "")
+df_abv['CAS'] = "ABV"
+df_abv['SMARTCARDNO'] = pd.to_numeric(df_abv['SMARTCARDNO'], errors='coerce')
+df_abv = df_abv.loc[:, ['SMARTCARDNO', 'CAS']]
+df_abv.rename(columns={'SMARTCARDNO': 'VC'}, inplace=True)
+df_abv.shape
+
+
+
+
+## ICAS
+df1 = pd.read_excel("D:/1.DAS/0 Shree Devi/2022/1. Raw/CAS/ICAS/Weekly Excel/1. Jan_22-/PackageSubscription_28Jan2022.xlsx", header = 4)
+df2 = pd.read_excel("D:/1.DAS/0 Shree Devi/2022/1. Raw/CAS/ICAS/Weekly Excel/1. Jan_22-/ProductSubscription_28Jan2022.xlsx", header = 4)
+df_icas = df1.append(df2, ignore_index=True)
+df_icas['CAS'] = "ICAS"
+df_icas = df_icas.dropna(subset="STBNO")
+df_icas = df_icas.drop_duplicates(subset=['STBNO'])
+df_icas = df_icas.loc[:, ['STBNO', 'CAS']]
+df_icas.rename(columns={'STBNO': 'VC'}, inplace=True)
+df_icas.shape
+df_icas.head()
+
+
+
+## Irdeto
+df_irdeto = pd.read_excel("D:/1.DAS/0 Shree Devi/2022/2. Sorting/Weekly Unique/CAS/Irdeto/28January2022_unique.xlsx")
+df_irdeto['VC'] = df_irdeto['VC'].str.replace("'", "")
+df_irdeto['CAS'] = "irdeto"
+df_irdeto['VC'] = pd.to_numeric(df_irdeto['VC'], errors='coerce')
+df_irdeto = df_irdeto.loc[:, ['VC', 'CAS']]
+df_irdeto.rename(columns={'VC': 'VC'}, inplace=True)
+df_irdeto.shape
+
+
+
+
+## Secure TV
+df_secure_tv = pd.read_excel("D:/1.DAS/0 Shree Devi/2022/2. Sorting/Weekly Unique/CAS/Secure TV/SecureTV_CAS_Report_STB_Inventory_All_28Jan2022_unique.xlsx")
+df_secure_tv['cas_serial_number'] = df_secure_tv['cas_serial_number'].str.replace("'", "")
+df_secure_tv['CAS'] = "secure_tv"
+df_secure_tv = df_secure_tv.loc[:, ['cas_serial_number', 'CAS']]
+df_secure_tv.rename(columns={'cas_serial_number': 'VC'}, inplace=True)
+df_secure_tv.shape
+
+
+
+
+## Verimetrix
+df_verimetrix = pd.read_excel("D:/1.DAS/0 Shree Devi/2022/2. Sorting/Weekly Unique/CAS/Verimetrix/20220128_daily_entitlements_report_unique.xlsx")
+df_verimetrix['VC'] = df_verimetrix['VC'].str.replace("'", "")
+df_verimetrix['CAS'] = "verimetrix"
+df_verimetrix['VC'] = pd.to_numeric(df_verimetrix['VC'], errors='coerce')
+df_verimetrix = df_verimetrix.loc[:, ['VC', 'CAS']]
+df_verimetrix.shape
+
+
+
+## CAS
+df_cas_list = [df_abv, df_icas, df_irdeto, df_secure_tv, df_verimetrix]
+df_cas = pd.concat(df_cas_list, ignore_index=True)
+df_cas.shape
+
+
+# Find Card Numbers present in sms df but not in cas df
+sms_not_in_cas = df_sms[~df_sms['VC'].isin(df_cas['VC'])]
+
+print("Card Numbers present in sms df but not in cas df:")
+print(sms_not_in_cas['VC'].count())
+# Find Card Numbers present in cas df but not in sms df
+cas_not_in_sms = df_cas[~df_cas['VC'].isin(df_sms['VC'])]
+
+print("Card Numbers present in cas df but not in sms df:")
+print(cas_not_in_sms['VC'].count())
+
+
+
+
+

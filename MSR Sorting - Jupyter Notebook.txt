@@ -1,0 +1,73 @@
+import os
+import pandas as pd
+
+parent_folder_path = "D:/1.DAS/0 Shree Devi/2022/1. Raw/SMS/Weekly Active/"
+# Initialize an empty dictionary to store the results for each month
+results_dict = {}
+
+# Iterate through each month's folder
+for month_folder in os.listdir(parent_folder_path):
+    month_folder_path = os.path.join(parent_folder_path, month_folder)
+    
+    # Initialize an empty DataFrame to store the results for the month
+    month_combined_results = pd.DataFrame()
+    
+    # Initialize an empty list to store the file names for each month
+    file_names = []
+    
+    # Iterate through each day's file in the month folder
+    for file_name in os.listdir(month_folder_path):
+        file_path = os.path.join(month_folder_path, file_name)
+                
+        # Read the file into a DataFrame
+        df1 = pd.read_excel(file_path)
+        df1['package_names'] = df1['package_names'].str.split(':')
+        df1 = df1.explode('package_names')
+        df1['package_names'] = df1['package_names'].str.strip()
+        df1['package_names'] = df1['package_names'].str.replace("'",'')
+        
+        # Calculate total VC count for each package for this data
+        vc_counts = df1.groupby('package_names')['VC_Number'].nunique()
+        
+        # Rename the 'VC_Number' column to include the file name
+        file_name_no_extension = os.path.splitext(file_name)[0]
+        vc_counts.name = file_name_no_extension
+        
+        # Append the calculated data to the month's combined results
+        if month_combined_results.empty:
+            month_combined_results = vc_counts.copy()
+        else:
+            month_combined_results = pd.merge(month_combined_results, vc_counts, on="package_names", how="outer")
+        
+        # Store the file name in the list for this month
+        file_names.append(file_name_no_extension)
+    
+    # Check if any dataframes were collected for the month
+    if not month_combined_results.empty:
+        # Use the month name as the sheet name
+        sheet_name = month_folder
+        
+        # Store the month's combined results in the dictionary with the sheet name as the key
+        results_dict[sheet_name] = month_combined_results
+        
+        # Save the month-specific DataFrame to an Excel file
+        month_output_file_path = f'SMS_MSR_Sree_Devi_{sheet_name}.xlsx'
+        month_combined_results.reset_index().to_excel(month_output_file_path, index=False)  # Reset index to include 'package_names'
+        print(f"Saved results for {sheet_name} to: {month_output_file_path}")
+        
+        print(f"Processing completed for {month_folder}")
+
+# Check if any dataframes were collected for any month
+if not results_dict:
+    print("No valid Excel files found in the specified folders.")
+else:
+    # Create a Pandas Excel writer using openpyxl, and write each month's results to a separate sheet
+    output_file_path = 'SMS_MSR_Sree_Devi_2022.xlsx'
+    with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
+        for sheet_name, month_data in results_dict.items():
+            month_data.fillna(0, inplace=True)
+            
+            # Write the data to Excel with 'Package' included
+            month_data.reset_index().to_excel(writer, sheet_name=sheet_name, index=False)  # Reset index to include 'package_names'
+            
+    print(f"Saved combined results to: {output_file_path}")
